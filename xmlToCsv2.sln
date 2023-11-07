@@ -1,0 +1,23 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.6.33815.320
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "xmlToCsv2", "xmlToCsv2\xmlToCsv2.pyproj", "{28176582-0CE0-459C-82E3-7B4257899B2C}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{28176582-0CE0-459C-82E3-7B4257899B2C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{28176582-0CE0-459C-82E3-7B4257899B2C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {65D8309A-131D-455F-A518-B2A36CA09B57}
+	EndGlobalSection
+EndGlobal
