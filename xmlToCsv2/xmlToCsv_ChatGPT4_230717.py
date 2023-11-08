@@ -6,6 +6,8 @@ import json
 import os
 from collections import defaultdict
 
+#from symbol import try_stmt
+
 
 def open_csv_in_excel(csv_file):
     # Read csv file using pandas and specifying the encoding
@@ -90,14 +92,30 @@ def build_header_dict(element, parent_map, parent_path="", header_dict=None, key
         gGrandParent_tag = None
 
     elementTag = element.tag
+    
+    ancestors,ancestor_tags,ancestor_tags_tuple,ancestor_tags_tuple_withoutParent, ancestor_tags_tuple_withoutGrandParent, parent_tag,grandParent_tag = get_ancestors(element,parent_map)
+    """
+    ancestor_tags = [tag for (tag, level) in ancestors]
+
+    if(len(ancestor_tags)>2):
+        ancestor_tags_tuple_withoutParent = tuple(ancestor_tags[1:])
+    else:
+        ancestor_tags_tuple_withoutParent = None
+
+    if(len(ancestor_tags)>1):
+            ancestor_tags_tuple = tuple(ancestor_tags)
+    else:
+        ancestor_tags_tuple = None
+    """
+    
 
     # For duplicate elements, we keep track of the count for each tag at each level
     # and each parent. This count serves as the index for the element.
-    if (elementTag, level, parent_tag, grandParent_tag) in duplicate_indexes:
-        duplicate_indexes[(elementTag, level, parent_tag,grandParent_tag,gGrandParent_tag)] += 1 # improvement idea1: duplicate_indexes[elementTag, level, [*list with all ancestor's tags*]]
+    if (elementTag, level, ancestor_tags_tuple) in duplicate_indexes:  #if (elementTag, level, parent_tag, grandParent_tag) in duplicate_indexes:
+        duplicate_indexes[(elementTag, level, ancestor_tags_tuple)] += 1 # improvement idea1: duplicate_indexes[elementTag, level, [*list with all ancestor's tags*]] /// duplicate_indexes[(elementTag, level, parent_tag,grandParent_tag,gGrandParent_tag)] += 1
     else:
-        duplicate_indexes[(elementTag, level, parent_tag,grandParent_tag,gGrandParent_tag)] = 0 # improvement idea1: duplicate_indexes[elementTag, level, [*list with all ancestor's tags*]]
-    index = duplicate_indexes[(elementTag, level, parent_tag,grandParent_tag,gGrandParent_tag)]
+        duplicate_indexes[(elementTag, level, ancestor_tags_tuple)] = 0 #improvement idea1: duplicate_indexes[elementTag, level, [*list with all ancestor's tags*]] duplicate_indexes[(elementTag, level, parent_tag,grandParent_tag,gGrandParent_tag)]
+    index = duplicate_indexes[(elementTag, level, ancestor_tags_tuple)] # index = duplicate_indexes[(elementTag, level, parent_tag,grandParent_tag,gGrandParent_tag)]
 
     if (elementTag, level) in keywordsTuple:
         currentKeyword = elementTag
@@ -118,7 +136,7 @@ def build_header_dict(element, parent_map, parent_path="", header_dict=None, key
     full_tag_path = f"{parent_path}/{tag}_idx{index}" if parent_path else f"{tag}_idx{index}"
 
     # Add index to the key in the dictionary.
-    header_dict[(tag, level, parent_tag, index,grandParent_tag,gGrandParent_tag)] = full_tag_path # improvement idea1: header_dict[(tag, level, parent_tag, inde, [*list with all ancestor's tags*])] -> use get_ancestors function
+    header_dict[(tag, level, ancestors[0][0], index,ancestor_tags_tuple_withoutParent)] = full_tag_path # improvement idea1: header_dict[(tag, level, parent_tag, index, [*list with all ancestor's tags*])] -> use get_ancestors function /// header_dict[(tag, level, parent_tag, index,grandParent_tag,gGrandParent_tag)] = full_tag_path
 
     attr_duplicate_indexes = {}
 
@@ -128,9 +146,9 @@ def build_header_dict(element, parent_map, parent_path="", header_dict=None, key
         attr_index = attr_duplicate_indexes[attr] - 1
         if currentKeyword:
             attrName = f"{attr}_{keyword_indexes[currentKeyword]}"
-            header_dict[(attrName, level, tag, attr_index,parent_tag,grandParent_tag)] = attr_path # improvement idea1:
+            header_dict[(attrName, level, tag, attr_index,ancestor_tags_tuple)] = attr_path # improvement idea1: ///header_dict[(attrName, level, tag, attr_index,parent_tag,grandParent_tag)] = attr_path
         else:
-            header_dict[(attr, level, tag, attr_index,parent_tag,grandParent_tag)] = attr_path # improvement idea1:
+            header_dict[(attr, level, tag, attr_index,ancestor_tags_tuple)] = attr_path # improvement idea1: //// header_dict[(attr, level, tag, attr_index,parent_tag,grandParent_tag)] = attr_path
 
     for child in element:
         build_header_dict(child, parent_map, full_tag_path, header_dict, keyword_indexes, last_keyword_level, currentKeyword, duplicate_indexes) # improvement idea1:
@@ -166,6 +184,22 @@ def get_headers(root, parent_map): ####still some problems with saving all the h
     for item in root.iter():
         itemTag = item.tag
         item_level = get_level(item, parent_map)
+
+        ancestors,ancestor_tags,ancestor_tags_tuple,ancestor_tags_tuple_withoutParent,ancestor_tags_tuple_withoutGrandParent,parentTag,grandParentTag  = get_ancestors(item,parent_map)
+        """
+        ancestor_tags = [tag for (tag, level) in ancestors]
+        x= len(ancestor_tags)
+        if(len(ancestor_tags)>2):
+            ancestor_tags_tuple_withoutParent = tuple(ancestor_tags[1:])
+        else:
+            ancestor_tags_tuple_withoutParent = None
+
+        if(len(ancestor_tags)>1):
+                ancestor_tags_tuple = tuple(ancestor_tags)
+        else:
+            ancestor_tags_tuple = None
+        
+
         parent = parent_map.get(item)
         parentTag = parent.tag if parent is not None else None
         grandParent = parent_map.get(parent)
@@ -178,19 +212,19 @@ def get_headers(root, parent_map): ####still some problems with saving all the h
 
         gggGrandParent = parent_map.get(ggGrandParent)
         gggGrandParentTag = gggGrandParent.tag if gggGrandParent is not None else None
-
+        """
         
-        for tag,level,pTag,GpTag,gGpTag,ggGpTag,gggGpTag in occurrence_counts.keys():
+        for tag,level,ancestor_tags_tuple_temp in occurrence_counts.keys(): #for tag,level,pTag,GpTag,gGpTag,ggGpTag,gggGpTag in occurrence_counts.keys():
             if level > item_level:
-                occurrence_counts[tag,level,pTag,GpTag,gGpTag,ggGpTag,gggGpTag] = 0
+                occurrence_counts[tag,level,ancestor_tags_tuple_temp] = 0 #occurrence_counts[tag,level,pTag,GpTag,gGpTag,ggGpTag,gggGpTag] = 0
                
 
         # Increment the occurrence count for this tag, level, parent, and grandparent, and get the current count.
-        occurrence_counts[(itemTag, item_level, parentTag,grandParentTag, gGrandParentTag,ggGrandParentTag,gggGrandParentTag)] = occurrence_counts.get((itemTag, item_level, parentTag, grandParentTag,gGrandParentTag,ggGrandParentTag,gggGrandParentTag), 0) + 1
-        index = occurrence_counts[(itemTag, item_level, parentTag, grandParentTag, gGrandParentTag,ggGrandParentTag,gggGrandParentTag)] - 1
+        occurrence_counts[(itemTag, item_level, ancestor_tags_tuple)] = occurrence_counts.get((itemTag, item_level, ancestor_tags_tuple), 0) + 1 #occurrence_counts[(itemTag, item_level, parentTag,grandParentTag, gGrandParentTag,ggGrandParentTag,gggGrandParentTag)] = occurrence_counts.get((itemTag, item_level, parentTag, grandParentTag,gGrandParentTag,ggGrandParentTag,gggGrandParentTag), 0) + 1
+        index = occurrence_counts[(itemTag, item_level, ancestor_tags_tuple)] - 1 #index = occurrence_counts[(itemTag, item_level, parentTag, grandParentTag, gGrandParentTag,ggGrandParentTag,gggGrandParentTag)] - 1
 
         # Add the item to its parent's list of children in children_dict.
-        children_dict.setdefault((parentTag,grandParentTag,gGrandParentTag,ggGrandParentTag,gggGrandParentTag),[]).append((itemTag, item_level, parentTag, index, grandParentTag,gGrandParentTag,ggGrandParentTag,gggGrandParentTag))
+        children_dict.setdefault((parentTag, grandParentTag, ancestor_tags_tuple_withoutGrandParent),[]).append((itemTag, item_level, parentTag, index, grandParentTag, ancestor_tags_tuple_withoutGrandParent)) #children_dict.setdefault((parentTag,grandParentTag,gGrandParentTag,ggGrandParentTag,gggGrandParentTag),[]).append((itemTag, item_level, parentTag, index, grandParentTag,gGrandParentTag,ggGrandParentTag,gggGrandParentTag))
 
         # Reset the index for each attribute as they are local to the item.
         attr_occurrence_counts = {}
@@ -198,7 +232,7 @@ def get_headers(root, parent_map): ####still some problems with saving all the h
         for attr in item.attrib.keys():
             attr_occurrence_counts[attr] = attr_occurrence_counts.get(attr, 0) + 1
             attr_index = attr_occurrence_counts[attr] - 1
-            children_dict.setdefault((itemTag,parentTag,grandParentTag,gGrandParentTag,ggGrandParentTag), []).append((attr, item_level, itemTag, attr_index, parentTag,grandParentTag,gGrandParentTag,ggGrandParentTag))
+            children_dict.setdefault((itemTag, parentTag, ancestor_tags_tuple_withoutParent), []).append((attr, item_level, itemTag, attr_index, parentTag,ancestor_tags_tuple_withoutParent)) # children_dict.setdefault((itemTag,parentTag,grandParentTag,gGrandParentTag,ggGrandParentTag), []).append((attr, item_level, itemTag, attr_index, parentTag,grandParentTag,gGrandParentTag,ggGrandParentTag))
 
     #children_dict = process_children_dict(children_dict)
 
@@ -211,11 +245,15 @@ def get_headers(root, parent_map): ####still some problems with saving all the h
         
         processed_set.add(header)
         headers.append(header)
-        for child in children_dict.get((header[0],header[2], header[4],header[5],header[6]), []):
+        z = header[0]
+        y = header[4]
+        w = header[5]
+        x = children_dict.get((header[0], header[4], header[5]), [])
+        for child in children_dict.get((header[0], header[4], header[5]), []): #for child in children_dict.get((header[0],header[2], header[4],header[5],header[6]), []):
             #if((child[0], child[1]) not in keywordsTuple):
                 add_header(child)
-
-    for header in children_dict.get((None,None,None,None,None), []):
+    
+    for header in children_dict.get((None,None, None), []): #for header in children_dict.get((None,None,None,None,None), []):
         add_header(header)
 
     #for header in children_dict.get(None, []):
@@ -253,7 +291,37 @@ def get_ancestors(element, parent_map):
 
     find_ancestors(element)
 
-    return ancestors
+    ancestor_tags = [tag for (tag, level) in ancestors]
+    
+    if(len(ancestor_tags)>3):
+        ancestor_tags_tuple_withoutGrandParent = tuple(ancestor_tags[2:])
+        
+    else:
+        ancestor_tags_tuple_withoutGrandParent = None
+        
+
+    if(len(ancestor_tags)>2):
+        ancestor_tags_tuple_withoutParent = tuple(ancestor_tags[1:])
+        
+    else:
+        ancestor_tags_tuple_withoutParent = None
+        
+
+    if(len(ancestor_tags)>1):
+            ancestor_tags_tuple = tuple(ancestor_tags)
+    else:
+        ancestor_tags_tuple = None
+
+    try: 
+        parentTag = ancestor_tags[0]
+    except:
+        parentTag = None
+    try:
+        grandParentTag = ancestor_tags[1]
+    except:
+        grandParentTag = None
+
+    return ancestors, ancestor_tags, ancestor_tags_tuple, ancestor_tags_tuple_withoutParent,ancestor_tags_tuple_withoutGrandParent, parentTag, grandParentTag
 
 
 
@@ -265,10 +333,10 @@ def get_first_row(headers, row, root,cell_path_matrix):
 
     row = [""] * len(headers)
     cell_path_row = [""] * len(headers)
-    for i, (header, header_level, header_parent, index, header_grandParent, header_gGrandParent,header_ggGrandParent, header_gggGrandParent) in enumerate(headers):  # Manual correction to export also attributes of root
+    for i, (header, header_level, header_parent, index, header_ancestors_withoutParent) in enumerate(headers):  # Manual correction to export also attributes of root /// for i, (header, header_level, header_parent, index, header_grandParent, header_gGrandParent,header_ggGrandParent, header_gggGrandParent) in enumerate(headers):
         if header in attributes and header_level == 1:
             row[i] = (root.attrib[header])
-            full_tag_path = header_dict[header,header_level, header_parent, index,header_grandParent,header_gGrandParent]
+            full_tag_path = header_dict[header,header_level, header_parent, index,header_ancestors_withoutParent] # full_tag_path = header_dict[header,header_level, header_parent, index,header_grandParent,header_gGrandParent]
             cell_path_row[i] = full_tag_path
 
     
@@ -296,6 +364,20 @@ def write_lines (headers, root, cell_path_matrix, writer, parent_map): ##### try
         itemLevel = get_level(item, parent_map)
         data = extract_xml_data(item,parent_map)
 
+        ancestors,ancestor_tags,ancestor_tags_tuple,ancestor_tags_tuple_withoutParent, ancestor_tags_tuple_withoutGrandParent,parentTag,grandParentTag  = get_ancestors(item,parent_map)
+        """
+        ancestor_tags = [tag for (tag, level) in ancestors]
+
+        if(len(ancestor_tags)>2):
+            ancestor_tags_tuple_withoutParent = tuple(ancestor_tags[1:])
+        else:
+            ancestor_tags_tuple_withoutParent = None
+
+        if(len(ancestor_tags)>1):
+               ancestor_tags_tuple = tuple(ancestor_tags)
+        else:
+            ancestor_tags_tuple = None
+        
         parent = parent_map.get(item)
         parentTag = parent.tag if parent is not None else None
         parentLevel = get_level(parent, parent_map) if parent is not None else None
@@ -309,10 +391,10 @@ def write_lines (headers, root, cell_path_matrix, writer, parent_map): ##### try
 
         ggGrandParent = parent_map.get(gGrandParent)
         ggGrandParentTag = ggGrandParent.tag if ggGrandParent is not None else None
-
+        """
         # Increment the occurrence count for this tag, level, and parent, and get the current count.
-        occurrence_counts[(itemTag, itemLevel, parentTag,grandParentTag)] = occurrence_counts.get((itemTag, itemLevel, parentTag,grandParentTag), 0) + 1
-        index = occurrence_counts[(itemTag, itemLevel, parentTag,grandParentTag)] - 1
+        occurrence_counts[(itemTag, itemLevel, ancestor_tags_tuple)] = occurrence_counts.get((itemTag, itemLevel, ancestor_tags_tuple), 0) + 1
+        index = occurrence_counts[(itemTag, itemLevel, ancestor_tags_tuple)] - 1
         #indexP = occurrence_counts[(parentTag, parentLevel, grandParentTag,gGrandParentTag)]
         #indexGP = occurrence_counts[(grandParentTag, grandParentLevel, gGrandParentTag,ggGrandParentTag)]
             
@@ -339,7 +421,7 @@ def write_lines (headers, root, cell_path_matrix, writer, parent_map): ##### try
             keywordLevel = -1
             currentKeyword = None
                 
-        for i, (header, header_level, header_parent, header_index, header_grandParent, header_gGrandParent, header_ggGrandParent,header_gggGrandParent) in enumerate(headers):
+        for i, (header, header_level, header_parent, header_index, header_ancestors_withoutParent) in enumerate(headers): # for i, (header, header_level, header_parent, header_index, header_grandParent, header_gGrandParent, header_ggGrandParent,header_gggGrandParent) in enumerate(headers):
             if header == itemTag and header_parent == parentTag: #if data only has the value itself
                 shortCategory = True
             else:
@@ -350,8 +432,8 @@ def write_lines (headers, root, cell_path_matrix, writer, parent_map): ##### try
             #if ((header,header_parent) in data) and (itemLevel == header_level):
             #if ((header in data) and (itemLevel == header_level) and (parentTag == header_parent)):
             
-                if(header != itemTag and header_parent == itemTag and header_grandParent == parentTag and header_gGrandParent == grandParentTag): #if we found attributes of item (which means level is the same as aprent)
-
+                if(header != itemTag and header_parent == itemTag and header_ancestors_withoutParent == ancestor_tags_tuple): #if we found attributes of item (which means level is the same as parent) // if(header != itemTag and header_parent == itemTag and header_grandParent == parentTag and header_gGrandParent == grandParentTag):
+                    """
                     try:
                         parentAncestor = keyword_ancestor_dict[(header_parent,header_level, header_grandParent,header_gGrandParent)][0]
                     except:
@@ -367,7 +449,7 @@ def write_lines (headers, root, cell_path_matrix, writer, parent_map): ##### try
 
                     parentAncestorLevel = get_level(parentAncestor,parent_map) if parentAncestor is not None else None
                     grandParentAncestorLevel = get_level(grandParentAncestor,parent_map) if grandParentAncestor is not None else None
-
+                    """
                     if(header == "RefID" and itemTag != "TypeRoot" and header_level == 3):
                         continue
                     else:
@@ -386,7 +468,7 @@ def write_lines (headers, root, cell_path_matrix, writer, parent_map): ##### try
                         else: # if there are no keywords
                             
                                 try:
-                                    full_tag_path = header_dict[(header, header_level, header_parent, index, header_grandParent,header_gGrandParent)]
+                                    full_tag_path = header_dict[(header, header_level, header_parent, index, header_ancestors_withoutParent)] # full_tag_path = header_dict[(header, header_level, header_parent, index, header_grandParent,header_gGrandParent)]
                                 except:
                                     continue
                             
